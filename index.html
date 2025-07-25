@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Football Adventure Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      overflow: hidden;
+      background: linear-gradient(to top, #87CEEB, #E0F7FA);
+      font-family: sans-serif;
+    }
+
+    @keyframes pop {
+      from { transform: translate(-50%, -50%) scale(1); }
+      to { transform: translate(-50%, -50%) scale(1.1); }
+    }
+
+    #startScreen {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #startScreen h1 {
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+
+    #startScreen button {
+      font-size: 20px;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      background: limegreen;
+      color: white;
+    }
+
+    .game {
+      position: relative;
+      width: 5000px;
+      height: 100vh;
+    }
+
+    .ground {
+      position: absolute;
+      bottom: 0;
+      height: 100px;
+      width: 100%;
+      background: linear-gradient(to top, #2e8b57, #3cb371);
+    }
+
+    #ball {
+      position: absolute;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #8B4513, #5C3317);
+      background-size: cover;
+      bottom: 100px;
+      left: 100px;
+      transition: transform 0.1s linear;
+    }
+
+    .obstacle {
+      position: absolute;
+      width: 50px;
+      height: 70px;
+      background: darkgray;
+      border-radius: 5px;
+      bottom: 100px;
+    }
+
+    .slope {
+      position: absolute;
+      width: 300px;
+      height: 150px;
+      background: url('https://i.ibb.co/qYVzM1b/rock-texture.jpg') no-repeat center/cover;
+      clip-path: polygon(0 100%, 50% 0%, 100% 100%);
+      bottom: 100px;
+      z-index: 0;
+    }
+
+    .pond {
+      position: absolute;
+      bottom: 100px;
+      width: 300px;
+      height: 30px;
+      background: linear-gradient(to bottom, #1e90ff, #0066cc);
+      border-radius: 10px;
+      z-index: 1;
+    }
+
+    .goal {
+      position: absolute;
+      bottom: 100px;
+      width: 100px;
+      height: 100px;
+      background: url('https://i.ibb.co/mcV5bWx/goal.png') no-repeat center/contain;
+    }
+
+    .cloud {
+      position: absolute;
+      width: 100px;
+      height: 60px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 30px 0 white, 60px 0 white;
+      top: 30px;
+      animation: cloudMove 60s linear infinite;
+    }
+
+    @keyframes cloudMove {
+      from { left: -200px; }
+      to { left: 5200px; }
+    }
+
+    .bird {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      background: url('https://i.ibb.co/4VrhY88/bird.png') no-repeat center/contain;
+      background-size: cover;
+      animation: birdFly 30s linear infinite;
+      top: 100px;
+    }
+
+    @keyframes birdFly {
+      from { left: -100px; }
+      to { left: 5100px; }
+    }
+
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 99;
+      display: flex;
+      gap: 10px;
+    }
+
+    .controls button {
+      font-size: 20px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #fff;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    #scoreBoard {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.8);
+      padding: 10px 20px;
+      font-size: 20px;
+      border-radius: 10px;
+      z-index: 100;
+    }
+
+    @media screen and (max-width: 768px) {
+      .controls button {
+        font-size: 16px;
+        padding: 10px 15px;
+      }
+      #startScreen h1 {
+        font-size: 28px;
+      }
+      #startScreen button {
+        font-size: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="startScreen">
+  <h1>⚽ Football Adventure</h1>
+  <button onclick="startGame()">Start Game</button>
+</div>
+
+<div id="scoreBoard">Score: 0</div>
+
+<div id="viewport" style="width: 100vw; height: 100vh; overflow: hidden; position: relative;">
+  <div class="game" id="game">
+    <div id="ball"></div>
+    <div class="ground"></div>
+    <div class="pond" style="left: 2700px;"></div>
+    <div class="goal" style="left: 4700px;"></div>
+    <div class="cloud" style="top: 60px;"></div>
+    <div class="cloud" style="top: 100px; animation-delay: 15s;"></div>
+    <div class="bird" style="top: 140px;"></div>
+  </div>
+</div>
+
+<div class="controls">
+  <button onmousedown="holdMove('left')" ontouchstart="holdMove('left')" onmouseup="stopMove()" ontouchend="stopMove()">⬅️</button>
+  <button onclick="jump()" ontouchstart="jump()">⬆️</button>
+  <button onmousedown="holdMove('right')" ontouchstart="holdMove('right')" onmouseup="stopMove()" ontouchend="stopMove()">➡️</button>
+</div>
+
+<script>
+  const ball = document.getElementById("ball");
+  const game = document.getElementById("game");
+  const viewport = document.getElementById("viewport");
+  const startScreen = document.getElementById("startScreen");
+  const scoreBoard = document.getElementById("scoreBoard");
+
+  let left = 100, bottom = 100;
+  let isJumping = false, scrollX = 0, gameStarted = false;
+  let goalReached = false, score = 0;
+  let moveInterval, rotation = 0;
+  let obstacles = [];
+
+  function updatePosition() {
+    ball.style.left = left + "px";
+    ball.style.bottom = bottom + "px";
+    if (left > scrollX + 300) {
+      scrollX = left - 300;
+      viewport.scrollLeft = scrollX;
+    }
+  }
+
+  function createObstacle(type, pos) {
+    const ob = document.createElement("div");
+    ob.className = type;
+    ob.style.left = pos + "px";
+    if (type === 'slope') {
+      ob.style.width = '300px';
+      ob.style.height = '150px';
+    }
+    game.appendChild(ob);
+    obstacles.push(ob);
+  }
+
+  function generateObstacles() {
+    let pos = 1000;
+    for (let i = 0; i < 10; i++) {
+      if (pos >= 2600 && pos <= 3000) {
+        pos += 500; continue;
+      }
+      if (i === 2 || i === 6) {
+        createObstacle('slope', pos);
+        pos += 600;
+      } else {
+        createObstacle('obstacle', pos);
+        pos += 400;
+      }
+    }
+  }
+
+  function startGame() {
+    startScreen.style.display = "none";
+    gameStarted = true;
+    generateObstacles();
+  }
+
+  function move(dir) {
+    const step = 5;
+    if (dir === "left") { left -= step; rotation -= 10; }
+    else { left += step; rotation += 10; }
+
+    ball.style.transform = `rotate(${rotation}deg)`;
+    updatePosition();
+    checkCollision();
+  }
+
+  function holdMove(dir) {
+    clearInterval(moveInterval);
+    moveInterval = setInterval(() => move(dir), 20);
+  }
+
+  function stopMove() {
+    clearInterval(moveInterval);
+  }
+
+  function jump() {
+    if (isJumping) return;
+    isJumping = true;
+    let h = 0;
+    const up = setInterval(() => {
+      if (h >= 250) {
+        clearInterval(up);
+        const down = setInterval(() => {
+          if (h <= 0) {
+            clearInterval(down);
+            doBounces(0);
+          } else {
+            h -= 10; bottom = 100 + h; updatePosition();
+          }
+        }, 20);
+      } else {
+        h += 10; bottom = 100 + h; updatePosition();
+      }
+    }, 20);
+  }
+
+  function doBounces(index) {
+    const heights = [80, 40, 20];
+    if (index >= heights.length) {
+      isJumping = false;
+      return;
+    }
+
+    let h = 0, max = heights[index];
+    const up = setInterval(() => {
+      if (h >= max) {
+        clearInterval(up);
+        const down = setInterval(() => {
+          if (h <= 0) {
+            clearInterval(down);
+            doBounces(index + 1);
+          } else {
+            h -= 5; bottom = 100 + h; updatePosition();
+          }
+        }, 20);
+      } else {
+        h += 5; bottom = 100 + h; updatePosition();
+      }
+    }, 20);
+  }
+
+  function checkCollision() {
+    if (goalReached) return;
+
+    for (const ob of obstacles) {
+      const obLeft = parseInt(ob.style.left);
+      if (ob.classList.contains("obstacle") &&
+          left + 60 > obLeft &&
+          left < obLeft + 50 &&
+          bottom <= 170) {
+        alert("💥 Game Over!");
+        location.reload();
+      }
+
+      if (!ob.classList.contains("hit") &&
+          left > obLeft + 50 &&
+          ob.classList.contains("obstacle")) {
+        score += 10;
+        scoreBoard.innerText = `Score: ${score}`;
+        ob.classList.add("hit");
+      }
+    }
+
+    if (left + 60 > 4700 && left < 4800) {
+      goalReached = true;
+      obstacles.forEach(o => o.style.display = "none");
+      celebrate();
+    }
+  }
+
+  function celebrate() {
+    let confetti = document.createElement('div');
+    confetti.innerHTML = '🎊🎉🏆 YOU WIN! 🏆🎉🎊';
+    confetti.style.position = 'fixed';
+    confetti.style.top = '40%';
+    confetti.style.left = '50%';
+    confetti.style.transform = 'translate(-50%, -50%)';
+    confetti.style.fontSize = '48px';
+    confetti.style.color = 'gold';
+    confetti.style.zIndex = '9999';
+    confetti.style.animation = 'pop 1s ease-out infinite alternate';
+    document.body.appendChild(confetti);
+
+    let bounce = 0;
+    const loop = () => {
+      if (bounce >= 4) return;
+      let h = 0;
+      const up = setInterval(() => {
+        if (h >= 80) {
+          clearInterval(up);
+          const down = setInterval(() => {
+            if (h <= 0) {
+              clearInterval(down);
+              bounce++;
+              loop();
+            } else {
+              h -= 5; bottom = 100 + h; updatePosition();
+            }
+          }, 20);
+        } else {
+          h += 5; bottom = 100 + h; updatePosition();
+        }
+      }, 20);
+    };
+    loop();
+  }
+
+  updatePosition();
+</script>
+
+</body>
+</html>
